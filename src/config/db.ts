@@ -1,20 +1,18 @@
-
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGO_URI;
+const connectDB = async (): Promise<void> => {
+  const MONGO_URI = process.env.MONGO_URI_PROD;
+  if (!MONGO_URI) throw new Error("no url available");
 
-if (!MONGO_URI) {
-  throw new Error("MONGO_URI environment variable is not set.");
-}
-
-export const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(MONGO_URI, {
-      autoIndex: true, // optional
+    const conn = await mongoose.connect(MONGO_URI, {
+      autoIndex: true, // optional, useful in prod
     });
-    console.log("✅ MongoDB connected successfully");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
+    console.log(`✅ DB connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error("❌ DB connection error:", error);
+    process.exit(1); // exit the app if DB connection fails
   }
 };
+
+export default connectDB;

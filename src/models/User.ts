@@ -3,7 +3,7 @@ import mongoose , { Schema , Document } from "mongoose";
 export interface IUser extends Document {
   name: string;
   email: string;
-  password: string;  // make sure this exists
+  password: string;  
   role: string;
 }
 

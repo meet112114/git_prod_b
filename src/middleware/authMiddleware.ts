@@ -33,21 +33,21 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
 
 export const authenticateAdmin = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies?.token;
+     const token = req.cookies?.token;
     if (!token) return res.status(401).json({ message: "No token provided" });
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const user = await User.findById(decoded.id);
     if (!user) return res.status(401).json({ message: "User not found" });
-
+    console.log(user)
     if (user.role !== "admin") {
-      return res.status(403).json({ message: "Access denied. Admins only." });
+      return res.status(403).json({ message: " not a admin ." });
     }
 
     req.user = user; 
     next();
   } catch (err) {
     console.error(err);
-    return res.status(401).json({ message: "Invalid or expired token" });
+    return res.status(401).json({ message: "Invalid token" });
   }
 };

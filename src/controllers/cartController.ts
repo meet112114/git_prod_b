@@ -36,13 +36,17 @@ export const addToCart = async (req: Request, res: Response) => {
         (item) => item.product.toString() === productId
       );
 
-      if (itemIndex > -1) {
-        cart.items[itemIndex].quantity += quantity;
-      } else {
-        cart.items.push({ product: productId, quantity });
-      }
-
-      cart.totalPrice = await calculateTotal(cart);
+  if (itemIndex > -1) {
+  cart.items[itemIndex].quantity += quantity;
+  if (cart.items[itemIndex].quantity <= 0) {
+    cart.items.splice(itemIndex, 1);
+  }
+} else {
+  if (quantity > 0) {
+    cart.items.push({ product: productId, quantity });
+  }
+}
+    cart.totalPrice = await calculateTotal(cart);
     }
 
     await cart.save();
@@ -54,12 +58,45 @@ export const addToCart = async (req: Request, res: Response) => {
 };
 
 
+export const updateCartItem = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id as Types.ObjectId;
+    const { productId, quantity } = req.body;
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+    const itemIndex = cart.items.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (itemIndex > -1) {
+      cart.items[itemIndex].quantity = quantity;
+    }
+
+    cart.totalPrice = await calculateTotal(cart);
+
+    await cart.save();
+
+   
+    const updatedCart = await Cart.findById(cart._id).populate("items.product");
+
+    res.status(200).json({ message: "Cart updated", cart: updatedCart });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
 export const getCart = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id as Types.ObjectId;
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
 
-    if (!cart) return res.status(404).json({ message: "Cart is empty" });
+    if (!cart) {
+      return res.status(200).json({ cart: { items: [], totalPrice: 0 } });
+    }
 
     res.status(200).json({ cart });
   } catch (error) {
@@ -76,9 +113,15 @@ export const removeFromCart = async (req: Request, res: Response) => {
     const cart = await Cart.findOne({ user: userId });
     if (!cart) return res.status(404).json({ message: "Cart not found" });
 
+      if (!cart.items.length) {
+  return res.status(200).json({ message: "Cart is empty", cart });
+}
+
     cart.items = cart.items.filter(
       (item) => item.product.toString() !== productId
     );
+
+  
 
     cart.totalPrice = await calculateTotal(cart);
     await cart.save();
